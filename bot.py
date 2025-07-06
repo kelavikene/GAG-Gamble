@@ -118,7 +118,7 @@ async def on_command_error(ctx, error):
     else:
         print(f"{Colors.RED}❌ Error in command {ctx.command}: {error}{Colors.RESET}")
 
-def load_extensions():
+async def load_extensions():
     """Load command extensions from the commands folder"""
     if not os.path.exists('commands'):
         print(f"{Colors.YELLOW}📁 Commands folder not found, skipping extension loading.{Colors.RESET}")
@@ -131,7 +131,7 @@ def load_extensions():
     for filename in os.listdir('commands'):
         if filename.endswith('.py') and not filename.startswith('_'):
             try:
-                bot.load_extension(f'commands.{filename[:-3]}')
+                await bot.load_extension(f'commands.{filename[:-3]}')
                 print(f"   {Colors.GREEN}✅ Loaded: {filename}{Colors.RESET}")
                 loaded += 1
             except Exception as e:
@@ -142,7 +142,7 @@ def load_extensions():
 
 async def main():
     print(f"{Colors.BLUE}🚀 Initializing Discord Bot...{Colors.RESET}")
-    load_extensions()
+    await load_extensions()
     
     try:
         print(f"{Colors.BLUE}🔗 Connecting to Discord...{Colors.RESET}")
