@@ -228,6 +228,38 @@ class BankerControlView(discord.ui.View):
         self.cog = cog
         self.guild_id = guild_id
     
+    async def update_console_display(self, interaction):
+        """Update the banker console display with current status"""
+        try:
+            # Get current settings
+            settings = self.cog.banking_data['settings'].get(str(self.guild_id), {'deposit_enabled': True, 'withdraw_enabled': True})
+            
+            # Load animated emojis
+            emojis = self.cog.load_emojis()
+            up_emoji = emojis.get('banking', {}).get('deposite_up', '<a:UP:1390656196528177344>')
+            down_emoji = emojis.get('banking', {}).get('withdraw_down', '<a:DOWN:1390656250697744414>')
+            
+            # Use up emoji for enabled, down emoji for disabled
+            deposit_emoji = up_emoji if settings['deposit_enabled'] else down_emoji
+            withdraw_emoji = up_emoji if settings['withdraw_enabled'] else down_emoji
+            
+            # Create description with current status
+            description = f"""Use the dropdowns below to control the banking system:
+
+**Depositing:** {deposit_emoji}
+**Withdrawing:** {withdraw_emoji}"""
+            
+            embed = discord.Embed(
+                title="🏦 Banker Control Panel",
+                description=description,
+                color=0x0099ff
+            )
+            
+            return embed
+        except Exception as e:
+            print(f"Error updating console display: {e}")
+            return None
+    
     @discord.ui.select(
         placeholder="🏦 Deposit Control",
         options=[
@@ -252,7 +284,12 @@ class BankerControlView(discord.ui.View):
             self.cog.save_banking_data()
             await self.cog.update_hub_message(self.guild_id)
             
-            await interaction.response.send_message(f"💰 Deposit has been {status}!", ephemeral=True)
+            # Update the banker console display with new emojis
+            updated_embed = await self.update_console_display(interaction)
+            if updated_embed:
+                await interaction.response.edit_message(embed=updated_embed, view=self)
+            else:
+                await interaction.response.send_message(f"💰 Deposit has been {status}!", ephemeral=True)
         
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
@@ -281,7 +318,12 @@ class BankerControlView(discord.ui.View):
             self.cog.save_banking_data()
             await self.cog.update_hub_message(self.guild_id)
             
-            await interaction.response.send_message(f"💸 Withdraw has been {status}!", ephemeral=True)
+            # Update the banker console display with new emojis
+            updated_embed = await self.update_console_display(interaction)
+            if updated_embed:
+                await interaction.response.edit_message(embed=updated_embed, view=self)
+            else:
+                await interaction.response.send_message(f"💸 Withdraw has been {status}!", ephemeral=True)
         
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
