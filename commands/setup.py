@@ -40,7 +40,6 @@ class BankingSetup(commands.Cog):
     async def create_bank_hub_embed(self, guild_id):
         """Create the bank hub embed"""
         emojis = self.load_emojis()
-        settings = self.banking_data['settings'].get(str(guild_id), {'deposit_enabled': True, 'withdraw_enabled': True})
         
         # Get banking emojis
         bank_emoji = emojis.get('banking', {}).get('bank', '🏦')
@@ -53,21 +52,16 @@ class BankingSetup(commands.Cog):
             color=0x0099ff  # Blue color
         )
         
-        # Add deposit status
-        deposit_status = "Enabled" if settings['deposit_enabled'] else "Disabled"
-        deposit_icon = emojis.get('status', {}).get('enabled', '✅') if settings['deposit_enabled'] else emojis.get('status', {}).get('disabled', '❌')
+        # Add deposit and withdraw fields with just emojis
         embed.add_field(
             name=f"**Depositing:** {deposit_emoji}",
-            value=f"{deposit_icon} {deposit_status}",
+            value="\u200b",
             inline=True
         )
         
-        # Add withdraw status  
-        withdraw_status = "Enabled" if settings['withdraw_enabled'] else "Disabled"
-        withdraw_icon = emojis.get('status', {}).get('enabled', '✅') if settings['withdraw_enabled'] else emojis.get('status', {}).get('disabled', '❌')
         embed.add_field(
             name=f"**Withdrawing:** {withdraw_emoji}",
-            value=f"{withdraw_icon} {withdraw_status}",
+            value="\u200b",
             inline=True
         )
         
@@ -182,22 +176,22 @@ class BankingSetup(commands.Cog):
             return
         
         try:
-            # Get current settings
-            settings = self.banking_data['settings'].get(guild_id, {'deposit_enabled': True, 'withdraw_enabled': True})
-            
             embed = discord.Embed(
                 title="🏦 Banker Control Panel",
-                description="Use the buttons below to control the banking system:",
+                description="Use the dropdowns below to control the banking system:",
                 color=0x0099ff
             )
+            
+            # Get current settings
+            settings = self.banking_data['settings'].get(guild_id, {'deposit_enabled': True, 'withdraw_enabled': True})
             
             deposit_status = "✅ Enabled" if settings['deposit_enabled'] else "❌ Disabled"
             withdraw_status = "✅ Enabled" if settings['withdraw_enabled'] else "❌ Disabled"
             
-            embed.add_field(name="💰 Deposit", value=deposit_status, inline=True)
-            embed.add_field(name="💸 Withdraw", value=withdraw_status, inline=True)
+            embed.add_field(name="💰 Deposit Status", value=deposit_status, inline=True)
+            embed.add_field(name="💸 Withdraw Status", value=withdraw_status, inline=True)
             
-            view = SimpleBankerControlView(self, guild_id, settings)
+            view = BankerControlView(self, guild_id)
             
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
         
@@ -228,136 +222,72 @@ class BankingSetup(commands.Cog):
         except Exception as e:
             print(f"Error updating hub message: {e}")
 
-class SimpleBankerControlView(discord.ui.View):
-    def __init__(self, cog, guild_id, settings):
+class BankerControlView(discord.ui.View):
+    def __init__(self, cog, guild_id):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild_id = guild_id
-        self.settings = settings
         
         # Load emojis
         emojis = self.cog.load_emojis()
         up_emoji = emojis.get('banking', {}).get('deposite_up', '⬆️')
         down_emoji = emojis.get('banking', {}).get('withdraw_down', '⬇️')
-        
-        # Deposit buttons
-        self.deposit_up = discord.ui.Button(
-            emoji=up_emoji,
-            style=discord.ButtonStyle.green,
-            custom_id="deposit_enable",
-            disabled=settings['deposit_enabled']
-        )
-        self.deposit_down = discord.ui.Button(
-            emoji=down_emoji,
-            style=discord.ButtonStyle.red,
-            custom_id="deposit_disable", 
-            disabled=not settings['deposit_enabled']
-        )
-        
-        # Withdraw buttons
-        self.withdraw_up = discord.ui.Button(
-            emoji=up_emoji,
-            style=discord.ButtonStyle.green,
-            custom_id="withdraw_enable",
-            disabled=settings['withdraw_enabled']
-        )
-        self.withdraw_down = discord.ui.Button(
-            emoji=down_emoji,
-            style=discord.ButtonStyle.red,
-            custom_id="withdraw_disable",
-            disabled=not settings['withdraw_enabled']
-        )
-        
-        # Set button callbacks
-        self.deposit_up.callback = self.deposit_enable
-        self.deposit_down.callback = self.deposit_disable
-        self.withdraw_up.callback = self.withdraw_enable
-        self.withdraw_down.callback = self.withdraw_disable
-        
-        # Add buttons in rows
-        self.add_item(self.deposit_up)
-        self.add_item(self.deposit_down)
-        self.add_item(self.withdraw_up)
-        self.add_item(self.withdraw_down)
     
-    async def update_embed_and_buttons(self, interaction):
-        """Update the embed and button states"""
-        settings = self.cog.banking_data['settings'].get(str(self.guild_id), {'deposit_enabled': True, 'withdraw_enabled': True})
-        
-        embed = discord.Embed(
-            title="🏦 Banker Control Panel",
-            description="Use the buttons below to control the banking system:",
-            color=0x0099ff
-        )
-        
-        deposit_status = "✅ Enabled" if settings['deposit_enabled'] else "❌ Disabled"
-        withdraw_status = "✅ Enabled" if settings['withdraw_enabled'] else "❌ Disabled"
-        
-        embed.add_field(name="💰 Deposit", value=deposit_status, inline=True)
-        embed.add_field(name="💸 Withdraw", value=withdraw_status, inline=True)
-        
-        # Update button states
-        self.deposit_up.disabled = settings['deposit_enabled']
-        self.deposit_down.disabled = not settings['deposit_enabled']
-        self.withdraw_up.disabled = settings['withdraw_enabled']
-        self.withdraw_down.disabled = not settings['withdraw_enabled']
-        
-        await interaction.response.edit_message(embed=embed, view=self)
-        await self.cog.update_hub_message(self.guild_id)
-    
-    async def deposit_enable(self, interaction: discord.Interaction):
+    @discord.ui.select(
+        placeholder="🏦 Deposit Control",
+        options=[
+            discord.SelectOption(label="Enable Deposit", value="deposit_enable", emoji="⬆️"),
+            discord.SelectOption(label="Disable Deposit", value="deposit_disable", emoji="⬇️")
+        ]
+    )
+    async def deposit_control(self, interaction: discord.Interaction, select: discord.ui.Select):
         try:
             guild_id = str(self.guild_id)
+            
             if guild_id not in self.cog.banking_data['settings']:
                 self.cog.banking_data['settings'][guild_id] = {'deposit_enabled': True, 'withdraw_enabled': True}
             
-            self.cog.banking_data['settings'][guild_id]['deposit_enabled'] = True
+            if select.values[0] == "deposit_enable":
+                self.cog.banking_data['settings'][guild_id]['deposit_enabled'] = True
+                status = "✅ enabled"
+            else:
+                self.cog.banking_data['settings'][guild_id]['deposit_enabled'] = False
+                status = "❌ disabled"
+            
             self.cog.save_banking_data()
+            await self.cog.update_hub_message(self.guild_id)
             
-            await self.update_embed_and_buttons(interaction)
-            
+            await interaction.response.send_message(f"💰 Deposit has been {status}!", ephemeral=True)
+        
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
     
-    async def deposit_disable(self, interaction: discord.Interaction):
+    @discord.ui.select(
+        placeholder="💸 Withdraw Control",
+        options=[
+            discord.SelectOption(label="Enable Withdraw", value="withdraw_enable", emoji="⬆️"),
+            discord.SelectOption(label="Disable Withdraw", value="withdraw_disable", emoji="⬇️")
+        ]
+    )
+    async def withdraw_control(self, interaction: discord.Interaction, select: discord.ui.Select):
         try:
             guild_id = str(self.guild_id)
+            
             if guild_id not in self.cog.banking_data['settings']:
                 self.cog.banking_data['settings'][guild_id] = {'deposit_enabled': True, 'withdraw_enabled': True}
             
-            self.cog.banking_data['settings'][guild_id]['deposit_enabled'] = False
+            if select.values[0] == "withdraw_enable":
+                self.cog.banking_data['settings'][guild_id]['withdraw_enabled'] = True
+                status = "✅ enabled"
+            else:
+                self.cog.banking_data['settings'][guild_id]['withdraw_enabled'] = False
+                status = "❌ disabled"
+            
             self.cog.save_banking_data()
+            await self.cog.update_hub_message(self.guild_id)
             
-            await self.update_embed_and_buttons(interaction)
-            
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
-    
-    async def withdraw_enable(self, interaction: discord.Interaction):
-        try:
-            guild_id = str(self.guild_id)
-            if guild_id not in self.cog.banking_data['settings']:
-                self.cog.banking_data['settings'][guild_id] = {'deposit_enabled': True, 'withdraw_enabled': True}
-            
-            self.cog.banking_data['settings'][guild_id]['withdraw_enabled'] = True
-            self.cog.save_banking_data()
-            
-            await self.update_embed_and_buttons(interaction)
-            
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
-    
-    async def withdraw_disable(self, interaction: discord.Interaction):
-        try:
-            guild_id = str(self.guild_id)
-            if guild_id not in self.cog.banking_data['settings']:
-                self.cog.banking_data['settings'][guild_id] = {'deposit_enabled': True, 'withdraw_enabled': True}
-            
-            self.cog.banking_data['settings'][guild_id]['withdraw_enabled'] = False
-            self.cog.save_banking_data()
-            
-            await self.update_embed_and_buttons(interaction)
-            
+            await interaction.response.send_message(f"💸 Withdraw has been {status}!", ephemeral=True)
+        
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
