@@ -4,25 +4,62 @@ import json
 import os
 import asyncio
 import logging
+from datetime import datetime
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Console styling
+class Colors:
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    GREEN = '\033[92m'
+    BLUE = '\033[94m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    CYAN = '\033[96m'
+    MAGENTA = '\033[95m'
 
-# Load configuration
+def print_banner():
+    banner = f"""
+{Colors.CYAN}{Colors.BOLD}
+╔══════════════════════════════════════════════════════════════╗
+║                     🤖 DISCORD BOT STARTING                 ║
+║                         Version 1.0                         ║
+╚══════════════════════════════════════════════════════════════╝
+{Colors.RESET}"""
+    print(banner)
+
 def load_config():
     try:
         with open('config.json', 'r') as f:
-            return json.load(f)
+            config = json.load(f)
+            print(f"{Colors.GREEN}✅ Configuration loaded successfully{Colors.RESET}")
+            return config
     except FileNotFoundError:
-        print("Error: config.json not found!")
+        print(f"{Colors.RED}❌ Error: config.json not found!{Colors.RESET}")
         return None
     except json.JSONDecodeError:
-        print("Error: Invalid JSON in config.json!")
+        print(f"{Colors.RED}❌ Error: Invalid JSON in config.json!{Colors.RESET}")
         return None
 
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s | %(levelname)s | %(message)s',
+        handlers=[
+            logging.FileHandler('data/bot.log'),
+            logging.StreamHandler()
+        ]
+    )
+
+# Load configuration
+print_banner()
 config = load_config()
 if not config:
+    print(f"{Colors.RED}❌ Failed to load configuration. Exiting...{Colors.RESET}")
     exit(1)
+
+# Setup logging
+os.makedirs('data', exist_ok=True)
+setup_logging()
 
 # Bot setup
 intents = discord.Intents.default()
@@ -35,186 +72,98 @@ bot = commands.Bot(
     help_command=None
 )
 
-# Event handlers
 @bot.event
 async def on_ready():
-    print(f'🤖 Bot is ready!')
-    print(f'📝 Logged in as: {bot.user.name}')
-    print(f'🆔 Bot ID: {bot.user.id}')
-    print(f'🌐 Connected to {len(bot.guilds)} servers')
-    print(f'👥 Watching {len(set(bot.get_all_members()))} users')
-    print('─' * 50)
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 BOT SUCCESSFULLY CONNECTED! 🎉{Colors.RESET}")
+    print(f"{Colors.CYAN}{'─' * 60}{Colors.RESET}")
+    print(f"{Colors.BOLD}📝 Bot Name:{Colors.RESET} {Colors.YELLOW}{bot.user.name}{Colors.RESET}")
+    print(f"{Colors.BOLD}🆔 Bot ID:{Colors.RESET} {Colors.YELLOW}{bot.user.id}{Colors.RESET}")
+    print(f"{Colors.BOLD}🌐 Connected Servers:{Colors.RESET} {Colors.YELLOW}{len(bot.guilds)}{Colors.RESET}")
+    print(f"{Colors.BOLD}👥 Total Users:{Colors.RESET} {Colors.YELLOW}{len(set(bot.get_all_members()))}{Colors.RESET}")
+    print(f"{Colors.BOLD}📝 Command Prefix:{Colors.RESET} {Colors.YELLOW}{config['discord']['prefix']}{Colors.RESET}")
+    print(f"{Colors.BOLD}⏰ Connected At:{Colors.RESET} {Colors.YELLOW}{current_time}{Colors.RESET}")
+    print(f"{Colors.CYAN}{'─' * 60}{Colors.RESET}")
+    
+    # List connected servers
+    if bot.guilds:
+        print(f"{Colors.BOLD}🏰 Connected Servers:{Colors.RESET}")
+        for guild in bot.guilds:
+            print(f"   • {Colors.GREEN}{guild.name}{Colors.RESET} ({guild.member_count} members)")
+    
+    print(f"{Colors.CYAN}{'─' * 60}{Colors.RESET}")
+    print(f"{Colors.GREEN}✅ Bot is ready and waiting for commands!{Colors.RESET}\n")
     
     # Set bot status
     await bot.change_presence(
-        activity=discord.Game(name=f"{config['discord']['prefix']}help | Ready to serve!")
+        activity=discord.Game(name=f"{config['discord']['prefix']}help | Banking System Active"),
+        status=discord.Status.online
     )
 
 @bot.event
-async def on_member_join(member):
-    if config['settings']['welcomeMessage']:
-        try:
-            channel = discord.utils.get(member.guild.channels, name='general')
-            if channel:
-                embed = discord.Embed(
-                    title="👋 Welcome!",
-                    description=f"Welcome to **{member.guild.name}**, {member.mention}!",
-                    color=int(config['colors']['success'].replace('#', ''), 16)
-                )
-                embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
-                await channel.send(embed=embed)
-        except Exception as e:
-            print(f"Error sending welcome message: {e}")
+async def on_guild_join(guild):
+    print(f"{Colors.GREEN}🎉 Joined new server: {Colors.YELLOW}{guild.name}{Colors.RESET} ({guild.member_count} members)")
+
+@bot.event
+async def on_guild_remove(guild):
+    print(f"{Colors.RED}👋 Left server: {Colors.YELLOW}{guild.name}{Colors.RESET}")
 
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send("❌ Command not found! Use `!help` to see available commands.")
+        return  # Ignore command not found errors
     elif isinstance(error, commands.MissingPermissions):
         await ctx.send("❌ You don't have permission to use this command!")
-    elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(f"❌ Missing required argument: `{error.param}`")
     else:
-        await ctx.send(f"❌ An error occurred: {str(error)}")
-        print(f"Error in command {ctx.command}: {error}")
+        print(f"{Colors.RED}❌ Error in command {ctx.command}: {error}{Colors.RESET}")
 
-# Basic Commands
-@bot.command(name='ping')
-async def ping(ctx):
-    """Check bot latency"""
-    latency = round(bot.latency * 1000)
-    embed = discord.Embed(
-        title="🏓 Pong!",
-        description=f"Latency: `{latency}ms`",
-        color=int(config['colors']['info'].replace('#', ''), 16)
-    )
-    await ctx.send(embed=embed)
-
-@bot.command(name='info')
-async def info(ctx):
-    """Show bot information"""
-    embed = discord.Embed(
-        title="🤖 Bot Information",
-        color=int(config['colors']['info'].replace('#', ''), 16)
-    )
-    embed.add_field(name="👤 Bot Name", value=bot.user.name, inline=True)
-    embed.add_field(name="🆔 Bot ID", value=bot.user.id, inline=True)
-    embed.add_field(name="🌐 Servers", value=len(bot.guilds), inline=True)
-    embed.add_field(name="👥 Users", value=len(set(bot.get_all_members())), inline=True)
-    embed.add_field(name="📝 Prefix", value=config['discord']['prefix'], inline=True)
-    embed.add_field(name="🐍 Python", value="discord.py", inline=True)
-    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else bot.user.default_avatar.url)
-    await ctx.send(embed=embed)
-
-@bot.command(name='help')
-async def help_command(ctx):
-    """Show help information"""
-    embed = discord.Embed(
-        title="📚 Bot Commands",
-        description="Here are the available commands:",
-        color=int(config['colors']['info'].replace('#', ''), 16)
-    )
-    
-    commands_list = [
-        ("🏓 `!ping`", "Check bot latency"),
-        ("ℹ️ `!info`", "Show bot information"),
-        ("📚 `!help`", "Show this help message"),
-        ("👋 `!hello`", "Say hello to the bot"),
-        ("🎲 `!roll [sides]`", "Roll a dice (default 6 sides)"),
-        ("💎 `!serverinfo`", "Show server information")
-    ]
-    
-    for name, value in commands_list:
-        embed.add_field(name=name, value=value, inline=False)
-    
-    await ctx.send(embed=embed)
-
-@bot.command(name='hello')
-async def hello(ctx):
-    """Say hello"""
-    responses = [
-        f"Hello {ctx.author.mention}! 👋",
-        f"Hi there, {ctx.author.display_name}! 😊",
-        f"Hey {ctx.author.mention}! How are you doing? 🎉"
-    ]
-    import random
-    await ctx.send(random.choice(responses))
-
-@bot.command(name='roll')
-async def roll_dice(ctx, sides: int = 6):
-    """Roll a dice"""
-    if sides < 2:
-        await ctx.send("❌ Dice must have at least 2 sides!")
-        return
-    if sides > 100:
-        await ctx.send("❌ Dice can't have more than 100 sides!")
-        return
-    
-    import random
-    result = random.randint(1, sides)
-    embed = discord.Embed(
-        title="🎲 Dice Roll",
-        description=f"You rolled a **{result}** on a {sides}-sided dice!",
-        color=int(config['colors']['success'].replace('#', ''), 16)
-    )
-    await ctx.send(embed=embed)
-
-@bot.command(name='serverinfo')
-async def server_info(ctx):
-    """Show server information"""
-    guild = ctx.guild
-    embed = discord.Embed(
-        title=f"🏰 {guild.name}",
-        color=int(config['colors']['info'].replace('#', ''), 16)
-    )
-    
-    embed.add_field(name="👑 Owner", value=guild.owner.mention if guild.owner else "Unknown", inline=True)
-    embed.add_field(name="🆔 Server ID", value=guild.id, inline=True)
-    embed.add_field(name="📅 Created", value=guild.created_at.strftime("%B %d, %Y"), inline=True)
-    embed.add_field(name="👥 Members", value=guild.member_count, inline=True)
-    embed.add_field(name="📝 Channels", value=len(guild.channels), inline=True)
-    embed.add_field(name="🎭 Roles", value=len(guild.roles), inline=True)
-    
-    if guild.icon:
-        embed.set_thumbnail(url=guild.icon.url)
-    
-    await ctx.send(embed=embed)
-
-# Load commands from commands folder
 def load_extensions():
     """Load command extensions from the commands folder"""
     if not os.path.exists('commands'):
-        print("Commands folder not found, skipping extension loading.")
+        print(f"{Colors.YELLOW}📁 Commands folder not found, skipping extension loading.{Colors.RESET}")
         return
+    
+    print(f"{Colors.BLUE}📁 Loading command extensions...{Colors.RESET}")
+    loaded = 0
+    failed = 0
     
     for filename in os.listdir('commands'):
         if filename.endswith('.py') and not filename.startswith('_'):
             try:
                 bot.load_extension(f'commands.{filename[:-3]}')
-                print(f"✅ Loaded extension: {filename}")
+                print(f"   {Colors.GREEN}✅ Loaded: {filename}{Colors.RESET}")
+                loaded += 1
             except Exception as e:
-                print(f"❌ Failed to load extension {filename}: {e}")
+                print(f"   {Colors.RED}❌ Failed to load {filename}: {e}{Colors.RESET}")
+                failed += 1
+    
+    print(f"{Colors.BLUE}📊 Extensions loaded: {Colors.GREEN}{loaded} successful{Colors.RESET}, {Colors.RED}{failed} failed{Colors.RESET}")
 
-# Main execution
 async def main():
-    print("🚀 Starting Discord Bot...")
-    print("📁 Loading extensions...")
+    print(f"{Colors.BLUE}🚀 Initializing Discord Bot...{Colors.RESET}")
     load_extensions()
     
     try:
-        print("🔗 Connecting to Discord...")
+        print(f"{Colors.BLUE}🔗 Connecting to Discord...{Colors.RESET}")
         await bot.start(config['discord']['token'])
     except discord.LoginFailure:
-        print("❌ Invalid bot token! Please check your config.json")
+        print(f"{Colors.RED}❌ Invalid bot token! Please check your config.json{Colors.RESET}")
     except discord.HTTPException as e:
-        print(f"❌ HTTP Exception: {e}")
+        print(f"{Colors.RED}❌ HTTP Exception: {e}{Colors.RESET}")
+    except KeyboardInterrupt:
+        print(f"\n{Colors.YELLOW}👋 Bot shutdown requested by user.{Colors.RESET}")
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"{Colors.RED}❌ Unexpected error: {e}{Colors.RESET}")
+    finally:
+        if not bot.is_closed():
+            await bot.close()
+        print(f"{Colors.CYAN}👋 Bot has been shut down gracefully.{Colors.RESET}")
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n👋 Bot shutdown requested by user.")
+        print(f"\n{Colors.YELLOW}👋 Bot shutdown requested.{Colors.RESET}")
     except Exception as e:
-        print(f"❌ Fatal error: {e}")
+        print(f"{Colors.RED}❌ Fatal error: {e}{Colors.RESET}")

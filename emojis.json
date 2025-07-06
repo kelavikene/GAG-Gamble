@@ -5,17 +5,48 @@
     "warning": "⚠️",
     "info": "ℹ️",
     "loading": "⏳",
-    "thumbsup": "👍",
-    "thumbsdown": "👎",
-    "heart": "❤️",
-    "fire": "🔥",
-    "star": "⭐"
+    "checkmark": "✔️",
+    "cross": "❎"
+  },
+  "banking": {
+    "bank": ":bank:",
+    "deposite_up": "<a:UP:1390656196528177344>",
+    "withdraw_down": "<a:DOWN:1390656250697744414>",
+    "money_bag": "�",
+    "coin": "🪙",
+    "dollar": "💵",
+    "chart_up": "📈",
+    "chart_down": "📉",
+    "safe": "🔒",
+    "vault": "🏦",
+    "credit_card": "💳"
+  },
+  "money": {
+    "dollar_bills": "💸",
+    "money_with_wings": "�",
+    "gem": "💎",
+    "gold": "🥇",
+    "silver": "🥈",
+    "bronze": "🥉",
+    "trophy": "🏆",
+    "star": "⭐",
+    "sparkles": "✨"
+  },
+  "arrows": {
+    "up": "⬆️",
+    "down": "⬇️",
+    "left": "⬅️",
+    "right": "➡️",
+    "up_small": "�",
+    "down_small": "🔽"
   },
   "status": {
     "online": "🟢",
+    "offline": "🔴",
     "idle": "🟡",
     "dnd": "🔴",
-    "offline": "⚫"
+    "enabled": "✅",
+    "disabled": "❌"
   },
   "activities": {
     "music": "🎵",
@@ -32,13 +63,14 @@
     "timeout": "⏰"
   },
   "general": {
-    "welcome": "👋",
-    "goodbye": "👋",
-    "birthday": "🎂",
-    "party": "🎉",
-    "gift": "🎁",
-    "money": "💰",
-    "crown": "👑",
-    "shield": "🛡️"
+    "wave": "👋",
+    "thumbsup": "�",
+    "thumbsdown": "👎",
+    "heart": "❤️",
+    "fire": "🔥",
+    "rocket": "�",
+    "tada": "🎉",
+    "eyes": "�",
+    "thinking": "🤔"
   }
 }
