@@ -1,0 +1,44 @@
+{
+  "reactions": {
+    "success": "✅",
+    "error": "❌",
+    "warning": "⚠️",
+    "info": "ℹ️",
+    "loading": "⏳",
+    "thumbsup": "👍",
+    "thumbsdown": "👎",
+    "heart": "❤️",
+    "fire": "🔥",
+    "star": "⭐"
+  },
+  "status": {
+    "online": "🟢",
+    "idle": "🟡",
+    "dnd": "🔴",
+    "offline": "⚫"
+  },
+  "activities": {
+    "music": "🎵",
+    "gaming": "🎮",
+    "streaming": "📺",
+    "reading": "📚",
+    "coding": "💻"
+  },
+  "moderation": {
+    "ban": "🔨",
+    "kick": "👢",
+    "mute": "🔇",
+    "warn": "⚠️",
+    "timeout": "⏰"
+  },
+  "general": {
+    "welcome": "👋",
+    "goodbye": "👋",
+    "birthday": "🎂",
+    "party": "🎉",
+    "gift": "🎁",
+    "money": "💰",
+    "crown": "👑",
+    "shield": "🛡️"
+  }
+}
