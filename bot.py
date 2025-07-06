@@ -93,6 +93,15 @@ async def on_ready():
             print(f"   • {Colors.GREEN}{guild.name}{Colors.RESET} ({guild.member_count} members)")
     
     print(f"{Colors.CYAN}{'─' * 60}{Colors.RESET}")
+    
+    # Sync slash commands
+    try:
+        print(f"{Colors.BLUE}🔄 Syncing slash commands...{Colors.RESET}")
+        synced = await bot.tree.sync()
+        print(f"{Colors.GREEN}✅ Synced {len(synced)} slash commands{Colors.RESET}")
+    except Exception as e:
+        print(f"{Colors.RED}❌ Failed to sync commands: {e}{Colors.RESET}")
+    
     print(f"{Colors.GREEN}✅ Bot is ready and waiting for commands!{Colors.RESET}\n")
     
     # Set bot status
