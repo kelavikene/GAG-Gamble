@@ -41,10 +41,10 @@ class BankingSetup(commands.Cog):
         """Create the bank hub embed"""
         emojis = self.load_emojis()
         
-        # Get banking emojis
+        # Get banking emojis (use animated ones)
         bank_emoji = emojis.get('banking', {}).get('bank', '🏦')
-        deposit_emoji = emojis.get('banking', {}).get('deposite_up', '⬆️')
-        withdraw_emoji = emojis.get('banking', {}).get('withdraw_down', '⬇️')
+        deposit_emoji = emojis.get('banking', {}).get('deposite_up', '<a:UP:1390656196528177344>')
+        withdraw_emoji = emojis.get('banking', {}).get('withdraw_down', '<a:DOWN:1390656250697744414>')
         
         embed = discord.Embed(
             title=f"{bank_emoji} Bank Status",
@@ -52,20 +52,18 @@ class BankingSetup(commands.Cog):
             color=0x0099ff  # Blue color
         )
         
-        # Add deposit and withdraw fields with just emojis
+        # Add deposit and withdraw fields with animated emojis, no empty rows
         embed.add_field(
             name=f"**Depositing:** {deposit_emoji}",
-            value="\u200b",
-            inline=True
+            value="Use buttons below to proceed.",
+            inline=False
         )
         
         embed.add_field(
             name=f"**Withdrawing:** {withdraw_emoji}",
-            value="\u200b",
-            inline=True
+            value="",
+            inline=False
         )
-        
-        embed.add_field(name="\u200b", value="Use buttons below to proceed.", inline=False)
         
         # Set the image
         embed.set_image(url="https://cdn.discordapp.com/attachments/1390659613447426089/1390659694711930981/Screenshot_20250703_211651.jpg?ex=686b0a84&is=6869b904&hm=16fca25314000b7e44a2a8871fbb195a6b5d68cd911bed25956444a9118c07fc&")
@@ -74,26 +72,21 @@ class BankingSetup(commands.Cog):
     
     def create_bank_buttons(self, guild_id):
         """Create the deposit/withdraw buttons"""
-        emojis = self.load_emojis()
         settings = self.banking_data['settings'].get(str(guild_id), {'deposit_enabled': True, 'withdraw_enabled': True})
         
         view = discord.ui.View(timeout=None)
         
-        # Deposit button
-        deposit_emoji = emojis.get('banking', {}).get('deposite_up', '⬆️')
+        # Deposit button (no emoji, just text)
         deposit_button = discord.ui.Button(
             label="Deposit",
-            emoji=deposit_emoji,
             style=discord.ButtonStyle.grey,
             disabled=not settings['deposit_enabled'],
             custom_id=f"bank_deposit_{guild_id}"
         )
         
-        # Withdraw button
-        withdraw_emoji = emojis.get('banking', {}).get('withdraw_down', '⬇️')
+        # Withdraw button (no emoji, just text)
         withdraw_button = discord.ui.Button(
             label="Withdraw", 
-            emoji=withdraw_emoji,
             style=discord.ButtonStyle.grey,
             disabled=not settings['withdraw_enabled'],
             custom_id=f"bank_withdraw_{guild_id}"
@@ -176,20 +169,32 @@ class BankingSetup(commands.Cog):
             return
         
         try:
+            # Get current settings
+            settings = self.banking_data['settings'].get(guild_id, {'deposit_enabled': True, 'withdraw_enabled': True})
+            
+            # Load animated emojis
+            emojis = self.load_emojis()
+            deposit_emoji = emojis.get('banking', {}).get('deposite_up', '<a:UP:1390656196528177344>')
+            withdraw_emoji = emojis.get('banking', {}).get('withdraw_down', '<a:DOWN:1390656250697744414>')
+            
             embed = discord.Embed(
                 title="🏦 Banker Control Panel",
                 description="Use the dropdowns below to control the banking system:",
                 color=0x0099ff
             )
             
-            # Get current settings
-            settings = self.banking_data['settings'].get(guild_id, {'deposit_enabled': True, 'withdraw_enabled': True})
+            # Make status display like hub format with animated emojis
+            embed.add_field(
+                name=f"**Depositing:** {deposit_emoji}",
+                value="",
+                inline=False
+            )
             
-            deposit_status = "✅ Enabled" if settings['deposit_enabled'] else "❌ Disabled"
-            withdraw_status = "✅ Enabled" if settings['withdraw_enabled'] else "❌ Disabled"
-            
-            embed.add_field(name="💰 Deposit Status", value=deposit_status, inline=True)
-            embed.add_field(name="💸 Withdraw Status", value=withdraw_status, inline=True)
+            embed.add_field(
+                name=f"**Withdrawing:** {withdraw_emoji}",
+                value="",
+                inline=False
+            )
             
             view = BankerControlView(self, guild_id)
             
@@ -227,17 +232,12 @@ class BankerControlView(discord.ui.View):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild_id = guild_id
-        
-        # Load emojis
-        emojis = self.cog.load_emojis()
-        up_emoji = emojis.get('banking', {}).get('deposite_up', '⬆️')
-        down_emoji = emojis.get('banking', {}).get('withdraw_down', '⬇️')
     
     @discord.ui.select(
         placeholder="🏦 Deposit Control",
         options=[
-            discord.SelectOption(label="Enable Deposit", value="deposit_enable", emoji="⬆️"),
-            discord.SelectOption(label="Disable Deposit", value="deposit_disable", emoji="⬇️")
+            discord.SelectOption(label="Enable Deposit", value="deposit_enable", emoji="<a:UP:1390656196528177344>"),
+            discord.SelectOption(label="Disable Deposit", value="deposit_disable", emoji="<a:DOWN:1390656250697744414>")
         ]
     )
     async def deposit_control(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -265,8 +265,8 @@ class BankerControlView(discord.ui.View):
     @discord.ui.select(
         placeholder="💸 Withdraw Control",
         options=[
-            discord.SelectOption(label="Enable Withdraw", value="withdraw_enable", emoji="⬆️"),
-            discord.SelectOption(label="Disable Withdraw", value="withdraw_disable", emoji="⬇️")
+            discord.SelectOption(label="Enable Withdraw", value="withdraw_enable", emoji="<a:UP:1390656196528177344>"),
+            discord.SelectOption(label="Disable Withdraw", value="withdraw_disable", emoji="<a:DOWN:1390656250697744414>")
         ]
     )
     async def withdraw_control(self, interaction: discord.Interaction, select: discord.ui.Select):
