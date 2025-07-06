@@ -40,29 +40,27 @@ class BankingSetup(commands.Cog):
     async def create_bank_hub_embed(self, guild_id):
         """Create the bank hub embed"""
         emojis = self.load_emojis()
+        settings = self.banking_data['settings'].get(str(guild_id), {'deposit_enabled': True, 'withdraw_enabled': True})
         
-        # Get banking emojis (use animated ones)
-        bank_emoji = emojis.get('banking', {}).get('bank', '🏦')
-        deposit_emoji = emojis.get('banking', {}).get('deposite_up', '<a:UP:1390656196528177344>')
-        withdraw_emoji = emojis.get('banking', {}).get('withdraw_down', '<a:DOWN:1390656250697744414>')
+        # Get banking emojis based on status
+        up_emoji = emojis.get('banking', {}).get('deposite_up', '<a:UP:1390656196528177344>')
+        down_emoji = emojis.get('banking', {}).get('withdraw_down', '<a:DOWN:1390656250697744414>')
+        
+        # Use up emoji for enabled, down emoji for disabled
+        deposit_emoji = up_emoji if settings['deposit_enabled'] else down_emoji
+        withdraw_emoji = up_emoji if settings['withdraw_enabled'] else down_emoji
+        
+        # Create description exactly as requested
+        description = f"""Here you can deposit and withdraw your in-game items!
+
+**Depositing:** {deposit_emoji}
+**Withdrawing:** {withdraw_emoji}
+Use buttons below to proceed."""
         
         embed = discord.Embed(
-            title=f"{bank_emoji} Bank Status",
-            description="Here you can deposit and withdraw your in-game items!",
+            title=":bank: Bank Status",
+            description=description,
             color=0x0099ff  # Blue color
-        )
-        
-        # Add deposit and withdraw fields with animated emojis, no empty rows
-        embed.add_field(
-            name=f"**Depositing:** {deposit_emoji}",
-            value="Use buttons below to proceed.",
-            inline=False
-        )
-        
-        embed.add_field(
-            name=f"**Withdrawing:** {withdraw_emoji}",
-            value="",
-            inline=False
         )
         
         # Set the image
@@ -174,26 +172,23 @@ class BankingSetup(commands.Cog):
             
             # Load animated emojis
             emojis = self.load_emojis()
-            deposit_emoji = emojis.get('banking', {}).get('deposite_up', '<a:UP:1390656196528177344>')
-            withdraw_emoji = emojis.get('banking', {}).get('withdraw_down', '<a:DOWN:1390656250697744414>')
+            up_emoji = emojis.get('banking', {}).get('deposite_up', '<a:UP:1390656196528177344>')
+            down_emoji = emojis.get('banking', {}).get('withdraw_down', '<a:DOWN:1390656250697744414>')
+            
+            # Use up emoji for enabled, down emoji for disabled
+            deposit_emoji = up_emoji if settings['deposit_enabled'] else down_emoji
+            withdraw_emoji = up_emoji if settings['withdraw_enabled'] else down_emoji
+            
+            # Create description exactly as requested
+            description = f"""Use the dropdowns below to control the banking system:
+
+**Depositing:** {deposit_emoji}
+**Withdrawing:** {withdraw_emoji}"""
             
             embed = discord.Embed(
                 title="🏦 Banker Control Panel",
-                description="Use the dropdowns below to control the banking system:",
+                description=description,
                 color=0x0099ff
-            )
-            
-            # Make status display like hub format with animated emojis
-            embed.add_field(
-                name=f"**Depositing:** {deposit_emoji}",
-                value="",
-                inline=False
-            )
-            
-            embed.add_field(
-                name=f"**Withdrawing:** {withdraw_emoji}",
-                value="",
-                inline=False
             )
             
             view = BankerControlView(self, guild_id)
@@ -218,7 +213,7 @@ class BankingSetup(commands.Cog):
             if not message:
                 return
             
-            # Update embed and buttons
+            # Update embed and buttons with new format
             embed = await self.create_bank_hub_embed(guild_id)
             view = self.create_bank_buttons(guild_id)
             
