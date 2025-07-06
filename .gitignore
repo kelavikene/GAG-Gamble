@@ -1,0 +1,36 @@
+# Bot token and sensitive data
+config.json
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+bot_env/
+venv/
+env/
+ENV/
+
+# Data folder (may contain sensitive user data)
+data/
+!data/README.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Discord bot specific
+*.db
+*.sqlite
